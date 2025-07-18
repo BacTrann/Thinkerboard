@@ -14,15 +14,20 @@ note_db = None
 
 async def connect_db_client():
     global mongo_client, note_db
-    if note_db:
-        return note_db
+    if note_db != None:
+        return note_db['notes']
     try:
         # Create a new client and connect to the server
-        client = AsyncMongoClient(MONGO_URI)
-        await client.admin.command('ping')
+        mongo_client = AsyncMongoClient(MONGO_URI)
+        await mongo_client.admin.command('ping')
         logging.info('Successfully connected to database')
 
-        note_db = client['notes_db']
+        note_db = mongo_client['notes_db']
         return note_db['notes']
     except ConnectionFailure as e:
         logging.error(f"Failed to connect to database {e}")
+
+
+async def disconnect_db_client():
+    if mongo_client != None:
+        await mongo_client.close()
