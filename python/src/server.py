@@ -1,17 +1,23 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from contextlib import asynccontextmanager
 
-from config.db import connect_db_client, disconnect_db_client
-from RAG_llm.embeddings_model import get_embedding
-from utils.mongo_index import create_note_index, query_note_index
+
+from db.db import connect_db_client, disconnect_db_client
+from models.vectorstore import get_embedding
+from models.model import get_retrieval_model
+from utils.mongo_index import create_note_index, get_context_notes
+from utils.mongo_embed import update_missing_embeddings, periodic_embedding_scheduler
 from schemas.Note import Note
 from schemas.AIQuery import AIQuery
 
 
+# Lifespan event for FastApi app
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_note_index()
+    asyncio.create_task(periodic_embedding_scheduler())
     yield
     await disconnect_db_client()
 
@@ -36,5 +42,20 @@ async def root():
 @app.post("/query")
 async def query(request: AIQuery):
     user_query = get_embedding(request.query)
-    data = await query_note_index(user_query)
-    return {"data": data}
+    res = await get_context_notes(user_query)
+    return res
+
+
+@app.post("/update")
+async def update():
+    try:
+        await update_missing_embeddings()
+        return {"message": "Updated successful"}
+    except Exception as e:
+        raise HTTPException(status_code="400", detail=e)
+
+
+@app.post("/test")
+async def test():
+    res = await get_retrieval_model("Hello")
+    return {"res": res}

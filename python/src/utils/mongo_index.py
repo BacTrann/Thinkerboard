@@ -1,5 +1,7 @@
 from pymongo.operations import SearchIndexModel
-from config.db import connect_db_client
+from langchain_core.documents import Document
+
+from db.db import connect_db_client
 
 EMBEDDING_DIM = 768
 
@@ -22,10 +24,11 @@ async def create_note_index():
         type="vectorSearch"
     )
 
+    # create_search_index will skip if index is already created
     await note_db.create_search_index(model=note_search_index_model)
 
 
-async def query_note_index(embedded_query):
+async def get_context_notes(embedded_query):
     note_db = await connect_db_client()
     pipeline = [
         {
@@ -49,6 +52,7 @@ async def query_note_index(embedded_query):
     result = []
     cursor = await note_db.aggregate(pipeline=pipeline)
     async for note in cursor:
-        result.append(note)
+        content = note["title"] + " : " + note["content"]
+        result.append(Document(page_content=content))
 
     return result
