@@ -1,27 +1,32 @@
 import asyncio
 from pymongo import errors
+from bson.objectid import ObjectId
 
-from schemas.Note import Note
 from db.db import connect_db_client
 from models.vectorstore import get_embedding
 
 
-async def embed_and_save_note(note: Note):
-    note_db = await connect_db_client()
-    insert_note = {
-        "title": note["title"],
-        "content": note["content"],
-        "createdAt": note["createdAt"],
-        "updatedAt": note["updatedAt"],
-        "embedding": get_embedding(note["content"])
-    }
+# TODO: update to embed_and_update_note(str: ID of note)
+async def embed_and_update_note(note_id: str):
+    _id = ObjectId(note_id)
+    # insert_note = {
+    #     "title": note["title"],
+    #     "content": note["content"],
+    #     "createdAt": note["createdAt"],
+    #     "updatedAt": note["updatedAt"],
+    #     "embedding": get_embedding(note["content"])
+    # }
 
     try:
-        result = await note_db.insert_one(insert_note)
-        return str(result.inserted_id)
-    except errors.PyMongoError as e:
-        print(f"Error inserting note: {e}")
-        return None
+        note_db = await connect_db_client()
+        note = await note_db.find_one({"_id": _id})
+        if not note:
+            raise ValueError("Note not found")
+        embedding = get_embedding(note["content"])
+        await note_db.update_one({"_id": note_id}, {"$set": {"embedding": embedding}})
+
+    except Exception as e:
+        print(f"Error updating embedding of note: {e}")
 
 
 async def update_missing_embeddings():

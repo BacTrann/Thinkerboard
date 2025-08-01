@@ -8,6 +8,7 @@ from utils.mongo_index import get_context_notes
 
 
 MODEL_NAME = os.getenv("MODEL_NAME")
+retrieval_model = None
 
 retrieval_qa_chat_prompt = PromptTemplate(input_variables=["context", "input"], template="""
 1. Use the following pieces of context to answer the question at the end.
@@ -21,12 +22,22 @@ Question: {input}
 Helpful Answer:""")
 
 
-async def get_retrieval_model(query):
+# Helper Function to get document model
+def get_document_model():
     llm = OllamaLLM(model=MODEL_NAME, temperature=0, verbose=False)
+
+    document_model = create_stuff_documents_chain(
+        llm, retrieval_qa_chat_prompt)
+
+    return document_model
+
+
+async def query_model(query):
+    global retrieval_model
+    if retrieval_model == None:
+        retrieval_model = get_document_model()
+
     embedded_query = get_embedding(query)
     context = await get_context_notes(embedded_query)
 
-    combine_docs_chain = create_stuff_documents_chain(
-        llm, retrieval_qa_chat_prompt)
-
-    return combine_docs_chain.invoke({"input": query, "context": context})
+    return retrieval_model.invoke({"input": query, "context": context})

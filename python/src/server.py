@@ -5,18 +5,18 @@ from contextlib import asynccontextmanager
 
 
 from db.db import connect_db_client, disconnect_db_client
-from models.vectorstore import get_embedding
-from models.model import get_retrieval_model
-from utils.mongo_index import create_note_index, get_context_notes
-from utils.mongo_embed import update_missing_embeddings, periodic_embedding_scheduler
-from schemas.Note import Note
+from models.model import query_model
+from utils.mongo_index import create_note_index
+from utils.mongo_embed import embed_and_update_note, periodic_embedding_scheduler
+from schemas.Note import UpdateNoteQuery
 from schemas.AIQuery import AIQuery
 
 
 # Lifespan event for FastApi app
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_note_index()
+    await create_note_index()  # Create required index in MongoDB if not created
+    # Periodicially check and update missing embedding
     asyncio.create_task(periodic_embedding_scheduler())
     yield
     await disconnect_db_client()
@@ -41,15 +41,14 @@ async def root():
 
 @app.post("/query")
 async def query(request: AIQuery):
-    user_query = get_embedding(request.query)
-    res = await get_context_notes(user_query)
-    return res
+    res = await query_model(request.query)
+    return {'message': res}
 
 
 @app.post("/update")
-async def update():
+async def update(request: UpdateNoteQuery):
     try:
-        await update_missing_embeddings()
+        await embed_and_update_note(request.id)
         return {"message": "Updated successful"}
     except Exception as e:
         raise HTTPException(status_code="400", detail=e)
@@ -57,5 +56,5 @@ async def update():
 
 @app.post("/test")
 async def test():
-    res = await get_retrieval_model("Hello")
+    res = await query_model("Hello")
     return {"res": res}
