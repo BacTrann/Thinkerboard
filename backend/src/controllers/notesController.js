@@ -1,4 +1,8 @@
 import Note from "../models/Note.js";
+import axios from "axios";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // Get all user notes
 export async function getAllNotes(_, res) {
@@ -66,6 +70,17 @@ export async function deleteNote(req, res) {
     res.status(200).json({ message: "Note deleted successfully" });
   } catch (error) {
     console.error("Error in deleteNote controller", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function askNote(req, res) {
+  try {
+    const { query } = req.body;
+    const response = await axios.post(process.env.LLM_URL, { query: query });
+    return res.status(200).json({ message: response.data.message });
+  } catch (error) {
+    console.error("Error in askNote controller", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }

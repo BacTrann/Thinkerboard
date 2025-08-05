@@ -11,6 +11,10 @@ const noteSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    embedding: {
+      type: String, // Wrong type to exclude from return result
+      required: false,
+    },
   },
   { timestamps: true } // createAt, updateAt
 );
