@@ -45,10 +45,10 @@ async def query(request: AIQuery):
     return {'message': res}
 
 
-@app.post("/update")
-async def update(request: UpdateNoteQuery):
+@app.put("/embed/{note_id}")
+async def embed(note_id: str):
     try:
-        await embed_and_update_note(request.id)
+        await embed_and_update_note(note_id)
         return {"message": "Updated successful"}
     except Exception as e:
         raise HTTPException(status_code="400", detail=e)

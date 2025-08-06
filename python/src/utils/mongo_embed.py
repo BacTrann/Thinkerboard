@@ -8,7 +8,6 @@ from models.vectorstore import get_embedding
 
 # TODO: update to embed_and_update_note(str: ID of note)
 async def embed_and_update_note(note_id: str):
-    _id = ObjectId(note_id)
     # insert_note = {
     #     "title": note["title"],
     #     "content": note["content"],
@@ -18,6 +17,7 @@ async def embed_and_update_note(note_id: str):
     # }
 
     try:
+        _id = ObjectId(note_id)
         note_db = await connect_db_client()
         note = await note_db.find_one({"_id": _id})
         if not note:

@@ -36,6 +36,8 @@ export async function createNote(req, res) {
     const newNote = new Note({ title, content });
 
     const savedNote = await newNote.save();
+    // TODO: Find out why even with await, embedding not updated
+    axios.put(`${process.env.LLM_URL}/embed/${savedNote._id.toString()}`)
     res.status(201).json(savedNote);
   } catch (error) {
     console.error("Error in createNote controller", error);
@@ -53,7 +55,7 @@ export async function updateNote(req, res) {
     );
     if (!updatedNote)
       return res.status(404).json({ message: "Note not found" });
-
+    await axios.put(`${process.env.LLM_URL}/embed/${req.params.id}`);
     res.status(200).json({ message: "Note updated successfully" });
   } catch (error) {
     console.error("Error in updateNote controller", error);
@@ -77,7 +79,9 @@ export async function deleteNote(req, res) {
 export async function askNote(req, res) {
   try {
     const { query } = req.body;
-    const response = await axios.post(process.env.LLM_URL, { query: query });
+    const response = await axios.post(process.env.LLM_URL + "/query", {
+      query: query,
+    });
     return res.status(200).json({ message: response.data.message });
   } catch (error) {
     console.error("Error in askNote controller", error);
