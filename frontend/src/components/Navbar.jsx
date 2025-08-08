@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, Brain } from "lucide-react";
 
 const Navbar = () => {
   return (
@@ -12,9 +12,13 @@ const Navbar = () => {
             </h1>
           </Link>
           <div className="flex items-center gap-4">
-            <Link to={"/create"} className="btn btn-primary">
+            <Link to={"/create"} className="btn btn-primary ">
               <PlusIcon className="size-5" />
               <span>New Note</span>
+            </Link>
+            <Link to={"/ask"} className="btn btn-primary ">
+              <Brain className="size-5" />
+              <span>Ask AI</span>
             </Link>
           </div>
         </div>
